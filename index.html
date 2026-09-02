@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Проект: OSINT и защита от поддельных магазинов</title>
+    <style>
+        /* ===== БАЗА ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', 'Consolas', 'Monaco', monospace;
+            background: #0b0e0b;
+            color: #b0c4b0;
+            padding: 2rem 1.5rem;
+            line-height: 1.7;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        .container {
+            max-width: 1050px;
+            width: 100%;
+            margin: 0 auto;
+            background: #0f120f;
+            border-radius: 0.5rem;
+            padding: 2.5rem 2.8rem;
+            border: 1px solid #1a3a1a;
+            box-shadow: 0 0 40px rgba(0, 80, 0, 0.08);
+        }
+
+        /* ===== СИМВОЛЫ ===== */
+        .sym {
+            color: #33cc33;
+            font-weight: 700;
+            font-style: normal;
+        }
+
+        .sym-box {
+            display: inline-block;
+            color: #33cc33;
+            font-weight: 700;
+            margin-right: 0.3rem;
+        }
+
+        .sym-green {
+            color: #33cc33;
+        }
+
+        .sym-red {
+            color: #cc3333;
+        }
+
+        .sym-yellow {
+            color: #ccaa33;
+        }
+
+        .sym-gray {
+            color: #5a7a5a;
+        }
+
+        /* ===== ОБЛОЖКА ===== */
+        .cover {
+            text-align: center;
+            padding: 1.8rem 0 2.2rem;
+            border-bottom: 1px solid #1a3a1a;
+            margin-bottom: 2.5rem;
+        }
+
+        .cover .class-info {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            color: #3a6a3a;
+            font-weight: 600;
+        }
+
+        .cover h1 {
+            font-size: 2.6rem;
+            font-weight: 800;
+            color: #33cc33;
+            margin: 0.6rem 0 0.4rem;
+            letter-spacing: -0.02em;
+            text-shadow: 0 0 20px rgba(51, 204, 51, 0.10);
+        }
+
+        .cover .subtitle {
+            font-size: 1.1rem;
+            color: #7aaa7a;
+            font-weight: 400;
+        }
+
+        .cover .author {
+            margin-top: 1.2rem;
+            font-size: 0.95rem;
+            color: #6a8a6a;
+        }
+
+        .cover .author span {
+            background: #1a2a1a;
+            padding: 0.2rem 1.5rem;
+            border-radius: 0.3rem;
+            color: #88bb88;
+        }
+
+        .cover .year {
+            margin-top: 0.5rem;
+            color: #3a5a3a;
+            font-size: 0.9rem;
+        }
+
+        /* ===== ОГЛАВЛЕНИЕ ===== */
+        .toc {
+            background: #0f150f;
+            border-radius: 0.4rem;
+            padding: 1.5rem 2rem;
+            margin-bottom: 2.5rem;
+            border: 1px solid #1a3a1a;
+        }
+
+        .toc h2 {
+            font-size: 1.1rem;
+            color: #33cc33;
+            margin-bottom: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+
+        .toc ul {
+            list-style: none;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.2rem 2.5rem;
+        }
+
+        .toc ul li::before {
+            content: ">";
+            color: #33cc33;
+            font-weight: 700;
+            margin-right: 0.4rem;
+        }
+
+        .toc ul li a {
+            color: #8aaa8a;
+            text-decoration: none;
+            font-weight: 400;
+            transition: color 0.15s;
+            font-size: 0.95rem;
+        }
+
+        .toc ul li a:hover {
+            color: #33cc33;
+            text-decoration: underline;
+        }
+
+        @media (max-width: 600px) {
+            .toc ul {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* ===== ЗАГОЛОВКИ ===== */
+        .section-title {
+            font-size: 1.7rem;
+            font-weight: 700;
+            color: #33cc33;
+            margin: 2.5rem 0 1rem;
+            padding-bottom: 0.3rem;
+            border-bottom: 1px solid #1a3a1a;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+
+        .section-title .num {
+            color: #33cc33;
+            font-size: 1rem;
+            padding: 0.1rem 0.9rem;
+            border: 1px solid #1a3a1a;
+            border-radius: 0.3rem;
+            background: #0f150f;
+        }
+
+        .subsection-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #7aaa7a;
+            margin: 1.8rem 0 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* ===== КАРТОЧКИ ===== */
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+            gap: 1.5rem;
+            margin: 1.2rem 0;
+        }
+
+        .card {
+            background: #0f150f;
+            border-radius: 0.4rem;
+            padding: 1.5rem 1.5rem;
+            border: 1px solid #1a3a1a;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .card:hover {
+            border-color: #2a5a2a;
+            box-shadow: 0 0 30px rgba(0, 60, 0, 0.06);
+        }
+
+        .card h4 {
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: #88bb88;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.4rem;
+        }
+
+        .card p {
+            color: #8aaa8a;
+            font-size: 0.92rem;
+        }
+
+        .card .tag {
+            display: inline-block;
+            background: #1a2a1a;
+            padding: 0.05rem 0.9rem;
+            border-radius: 0.3rem;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: #5a8a5a;
+            margin-top: 0.3rem;
+            border: 1px solid #1a3a1a;
+        }
+
+        /* ===== ТАБЛИЦА ===== */
+        .table-wrap {
+            overflow-x: auto;
+            margin: 1.2rem 0;
+            border-radius: 0.4rem;
+            border: 1px solid #1a3a1a;
+        }
+
+        .table-wrap table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.92rem;
+        }
+
+        .table-wrap th {
+            background: #1a2a1a;
+            color: #33cc33;
+            padding: 0.8rem 1.2rem;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 1px solid #1a3a1a;
+        }
+
+        .table-wrap td {
+            padding: 0.7rem 1.2rem;
+            border-bottom: 1px solid #1a2a1a;
+        }
+
+        .table-wrap .osint-row td {
+            background: #0f170f;
+        }
+
+        .table-wrap .hacker-row td {
+            background: #170f0f;
+        }
+
+        .table-wrap .check {
+            color: #33cc33;
+            font-weight: 700;
+        }
+        .table-wrap .cross {
+            color: #cc3333;
+            font-weight: 700;
+        }
+
+        /* ===== МЕТОДЫ ===== */
+        .method-block {
+            background: #0f150f;
+            border: 1px solid #1a3a1a;
+            border-radius: 0.4rem;
+            padding: 1.2rem 1.5rem;
+            margin-bottom: 0.9rem;
+            transition: border-color 0.2s;
+        }
+
+        .method-block:hover {
+            border-color: #2a5a2a;
+        }
+
+        .method-block .method-header {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            flex-wrap: wrap;
+        }
+
+        .method-block .method-header .num {
+            color: #33cc33;
+            font-weight: 700;
+            font-size: 0.8rem;
+            padding: 0.1rem 0.9rem;
+            border: 1px solid #1a3a1a;
+            border-radius: 0.3rem;
+            background: #0f150f;
+        }
+
+        .method-block .method-header h5 {
+            font-size: 1.0rem;
+            font-weight: 600;
+            color: #88bb88;
+        }
+
+        .method-block .method-desc {
+            color: #7a9a7a;
+            font-size: 0.9rem;
+            margin: 0.2rem 0 0.3rem 0.3rem;
+        }
+
+        .method-block .tools {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem 1rem;
+            background: #0f170f;
+            border-radius: 0.3rem;
+            padding: 0.4rem 1rem;
+            margin-top: 0.3rem;
+            border: 1px solid #1a2a1a;
+        }
+
+        .method-block .tools .tool-link {
+            font-size: 0.82rem;
+            color: #6a9a6a;
+            text-decoration: none;
+            font-weight: 400;
+            border-bottom: 1px dotted #2a4a2a;
+            transition: color 0.15s;
+        }
+
+        .method-block .tools .tool-link:hover {
+            color: #33cc33;
+            border-bottom-color: #33cc33;
+        }
+
+        .method-block .tools .label {
+            font-size: 0.75rem;
+            color: #4a6a4a;
+            background: #1a2a1a;
+            padding: 0.05rem 0.7rem;
+            border-radius: 0.3rem;
+            border: 1px solid #1a3a1a;
+        }
+
+        /* ===== ВЫДЕЛЕНИЯ ===== */
+        .highlight-box {
+            background: #0f170f;
+            border-radius: 0.4rem;
+            padding: 1.5rem 2rem;
+            margin: 1.8rem 0;
+            border-left: 4px solid #33cc33;
+            border: 1px solid #1a3a1a;
+            border-left-width: 4px;
+        }
+
+        .highlight-box strong {
+            color: #88bb88;
+        }
+
+        .principle-box {
+            background: #0f150f;
+            border-radius: 0.4rem;
+            padding: 1.5rem 2rem;
+            margin: 1.8rem 0;
+            border-left: 4px solid #ccaa33;
+            border: 1px solid #1a3a1a;
+            border-left-width: 4px;
+        }
+
+        .principle-box h4 {
+            color: #ccaa33;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .risk-meter {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem 2.5rem;
+            background: #0f170f;
+            border-radius: 0.4rem;
+            padding: 1.2rem 2rem;
+            margin: 1.5rem 0;
+            border: 1px solid #1a3a1a;
+        }
+
+        .risk-meter .level {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #8aaa8a;
+        }
+
+        .risk-meter .dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            display: inline-block;
+            border: 1px solid #1a3a1a;
+        }
+        .dot.green { background: #33cc33; }
+        .dot.yellow { background: #ccaa33; }
+        .dot.red { background: #cc3333; }
+
+        .case-block {
+            background: #0f150f;
+            border-radius: 0.4rem;
+            padding: 1.5rem 2rem;
+            margin: 1.5rem 0;
+            border-left: 4px solid #ccaa33;
+            border: 1px solid #1a3a1a;
+            border-left-width: 4px;
+        }
+
+        .case-block h4 {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            color: #ccaa33;
+            font-size: 1.05rem;
+        }
+
+        .checklist-block {
+            background: #0f170f;
+            border-radius: 0.4rem;
+            padding: 1.8rem 2rem;
+            margin: 2rem 0;
+            border: 1px solid #1a3a1a;
+        }
+
+        .checklist-block h3 {
+            font-size: 1.2rem;
+            color: #33cc33;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+
+        .checklist-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 0.3rem 1.5rem;
+        }
+
+        .checklist-grid label {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            font-size: 0.92rem;
+            padding: 0.15rem 0;
+            cursor: default;
+            color: #8aaa8a;
+        }
+
+        .checklist-grid input[type="checkbox"] {
+            width: 1.1rem;
+            height: 1.1rem;
+            accent-color: #33cc33;
+            pointer-events: none;
+            filter: invert(0.8) hue-rotate(90deg);
+        }
+
+        /* ===== ВЫВОДЫ ===== */
+        .conclusion {
+            background: #0f170f;
+            border-radius: 0.4rem;
+            padding: 1.8rem 2.2rem;
+            margin: 2rem 0;
+            border-left: 4px solid #33cc33;
+            border: 1px solid #1a3a1a;
+            border-left-width: 4px;
+        }
+
+        .conclusion h3 {
+            color: #33cc33;
+            font-size: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .conclusion ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .conclusion ul li {
+            padding: 0.2rem 0;
+            color: #8aaa8a;
+        }
+
+        .conclusion ul li::before {
+            content: ">";
+            color: #33cc33;
+            margin-right: 0.6rem;
+            font-weight: 700;
+        }
+
+        /* ===== СПИСОК ЛИТЕРАТУРЫ ===== */
+        .references {
+            background: #0f150f;
+            border-radius: 0.4rem;
+            padding: 1.5rem 2rem;
+            margin-top: 2rem;
+            border: 1px solid #1a3a1a;
+        }
+
+        .references h3 {
+            font-size: 1.1rem;
+            color: #33cc33;
+            margin-bottom: 0.5rem;
+        }
+
+        .references ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .references ul li::before {
+            content: "•";
+            color: #33cc33;
+            font-weight: 700;
+            margin-right: 0.6rem;
+        }
+
+        .references ul li {
+            color: #6a8a6a;
+            font-size: 0.9rem;
+            padding: 0.1rem 0;
+        }
+
+        /* ===== ФУТЕР ===== */
+        .footer {
+            margin-top: 2.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid #1a3a1a;
+            text-align: center;
+            font-size: 0.85rem;
+            color: #3a5a3a;
+        }
+
+        @media (max-width: 640px) {
+            .container { padding: 1.5rem 1.2rem; }
+            .cover h1 { font-size: 1.8rem; }
+            .section-title { font-size: 1.4rem; }
+            .method-block .tools { flex-direction: column; gap: 0.2rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <!-- ===== ОБЛОЖКА ===== -->
+    <div class="cover">
+        <div class="class-info">[ ПРОЕКТНАЯ РАБОТА ] :: 7 «К» КЛАСС</div>
+        <h1>OSINT и защита от поддельных интернет-магазинов</h1>
+        <div class="subtitle">&lt; как не попасться на уловки мошенников &gt;</div>
+        <div class="author"><span>выполнил: ученик 7 «К» класса</span></div>
+        <div class="year">[ 2026 ]</div>
+    </div>
+
+    <!-- ===== ОГЛАВЛЕНИЕ ===== -->
+    <div class="toc">
+        <h2># СОДЕРЖАНИЕ</h2>
+        <ul>
+            <li><a href="#ch1">1. Что такое OSINT</a></li>
+            <li><a href="#ch2">2. OSINT vs хакерство</a></li>
+            <li><a href="#ch3">3. Где применяется OSINT</a></li>
+            <li><a href="#ch4">4. 10 методов проверки магазинов</a></li>
+            <li><a href="#ch5">5. Реальные кейсы</a></li>
+            <li><a href="#ch6">6. Чек-лист</a></li>
+            <li><a href="#ch7">7. Выводы</a></li>
+            <li><a href="#ch8">8. Список литературы</a></li>
+        </ul>
+    </div>
+
+    <!-- ===== ГЛАВА 1 ===== -->
+    <div class="section-title" id="ch1">
+        <span class="num">[1]</span> ЧТО ТАКОЕ OSINT
+    </div>
+
+    <div class="card-grid">
+        <div class="card">
+            <h4><span class="sym">>></span> Простыми словами</h4>
+            <p><strong>OSINT</strong> (Open Source Intelligence) — это умение находить и анализировать информацию, которая <strong>уже есть в открытом доступе</strong>: сайты, соцсети, карты, реестры, архивы. Это не хакерство, а полезный навык.</p>
+            <span class="tag">[ ЗАКОННО ]</span>
+        </div>
+        <div class="card">
+            <h4><span class="sym">>></span> Зачем это нужно</h4>
+            <p>Собрать разрозненные данные воедино и сделать <strong>обоснованный вывод</strong>. Например, понять, реальный магазин или мошеннический.</p>
+            <span class="tag">[ АНАЛИТИКА ]</span>
+        </div>
+        <div class="card">
+            <h4><span class="sym">>></span> Главный принцип</h4>
+            <p><strong>Один источник — совпадение. Три независимых источника, говорящих одно и то же, — факт.</strong></p>
+            <span class="tag">[ ДОКАЗАТЕЛЬНОСТЬ ]</span>
+        </div>
+    </div>
+
+    <div class="principle-box">
+        <h4><span class="sym">[!]</span> ЗАПОМНИТЕ</h4>
+        <p style="margin-top:0.3rem;"><strong>Один источник — совпадение. Три независимых источника, которые говорят одно и то же, — факт.</strong></p>
+        <p style="margin-top:0.3rem; color:#aa8833;">Пример: домен зарегистрирован вчера [X] + адрес — жилой дом [X] + отзывы только в Инстаграме [X] = магазин фейковый на 95%.</p>
+    </div>
+
+    <!-- ===== ГЛАВА 2 ===== -->
+    <div class="section-title" id="ch2">
+        <span class="num">[2]</span> OSINT VS ХАКЕРСТВО
+    </div>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>КРИТЕРИЙ</th>
+                    <th>OSINT-СПЕЦИАЛИСТ</th>
+                    <th>ХАКЕР</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr class="osint-row">
+                    <td><strong>Данные</strong></td>
+                    <td><span class="check">[+] Только открытые (публичные)</span></td>
+                    <td><span class="cross">[-] Взламывает закрытые базы</span></td>
+                </tr>
+                <tr class="hacker-row">
+                    <td><strong>Методы</strong></td>
+                    <td><span class="check">[+] Поисковики, карты, архивы</span></td>
+                    <td><span class="cross">[-] Эксплойты, брутфорс, SQL-инъекции</span></td>
+                </tr>
+                <tr class="osint-row">
+                    <td><strong>Законность</strong></td>
+                    <td><span class="check">[+] Полностью законно</span></td>
+                    <td><span class="cross">[-] Нарушает УК РФ (ст. 272, 273)</span></td>
+                </tr>
+                <tr class="hacker-row">
+                    <td><strong>Результат</strong></td>
+                    <td><span class="check">[+] Аналитика и выводы</span></td>
+                    <td><span class="cross">[-] Кража данных, ущерб</span></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="highlight-box">
+        <p><span class="sym">[!]</span> <strong>Важно:</strong> OSINT — это законно. Вы работаете только с тем, что владелец сам опубликовал. Никакого взлома или фишинга.</p>
+    </div>
+
+    <!-- ===== ГЛАВА 3 ===== -->
+    <div class="section-title" id="ch3">
+        <span class="num">[3]</span> ГДЕ ПРИМЕНЯЕТСЯ OSINT
+    </div>
+
+    <div class="card-grid">
+        <div class="card"><h4><span class="sym">></span> Проверка магазинов</h4><p>Не нарваться на мошенников: домен, отзывы, адрес, юрлицо.</p></div>
+        <div class="card"><h4><span class="sym">></span> Проверка людей</h4><p>Работодателя, сотрудника, партнёра, исполнителя.</p></div>
+        <div class="card"><h4><span class="sym">></span> Журналистика</h4><p>Проверка фактов, биографий, расследования.</p></div>
+        <div class="card"><h4><span class="sym">></span> Личная безопасность</h4><p>Поиск своих утечек в сети.</p></div>
+        <div class="card"><h4><span class="sym">></span> Бизнес-разведка</h4><p>Анализ конкурентов и рынка.</p></div>
+        <div class="card"><h4><span class="sym">></span> Поиск людей</h4><p>Восстановление утерянных контактов.</p></div>
+    </div>
+
+    <!-- ===== ГЛАВА 4 ===== -->
+    <div class="section-title" id="ch4">
+        <span class="num">[4]</span> 10 МЕТОДОВ ПРОВЕРКИ МАГАЗИНОВ
+    </div>
+
+    <div class="highlight-box" style="border-left-color:#33cc33;">
+        <p style="font-size:1.0rem; font-weight:600;"><span class="sym">>></span> К каждому методу — инструменты для самостоятельной проверки</p>
+    </div>
+
+    <!-- 1 -->
+    <div class="method-block">
+        <div class="method-header">
+            <span class="num">[1]</span>
+            <h5>Возраст домена (WHOIS)</h5>
+        </div>
+        <div class="method-desc">Если сайту меньше 6–12 месяцев — красный флаг. Мошенники редко используют старые домены.</div>
+        <div class="tools">
+            <span class="label">[ ИНСТРУМЕНТЫ ]</span>
+            <a href="https://whois.domaintools.com" target="_blank" class="tool-link">whois.domaintools.com</a>
+            <a href="https://www.nic.ru/whois/" target="_blank" class="tool-link">nic.ru/whois</a>
+            <a href="https://www.reg.ru/whois" target="_blank" class="tool-link">reg.ru/whois</a>
+        </div>
+    </div>
+
+    <!-- 2 -->
+    <div class="method-block">
+        <div class="method-header">
+            <span class="num">[2]</span>
+            <h5>История сайта (Wayback Machine)</h5>
+        </div>
+        <div class="method-desc">Посмотрите, как выглядел сайт раньше. Резкая смена дизайна или тематики — признак перепродажи домена.</div>
+        <div class="tools">
+            <span class="label">[ ИНСТРУМЕНТЫ ]</span>
+            <a href="https://archive.org/web/" target="_blank" class="tool-link">archive.org/web/</a>
+        </div>
+    </div>
+
+    <!-- 3 -->
+    <div class="method-block">
+        <div class="method-header">
+            <span class="num">[3]</span>
+            <h5>DNS-история и хостинг</h5>
+        </div>
+        <div class="method-desc">Проверьте, на каких IP и хостингах жил домен. Частая смена хостинга — повод насторожиться.</div>
+        <div class="tools">
+            <span class="label">[ ИНСТРУМЕНТЫ ]</span>
+            <a href="https://securitytrails.com/" target="_blank" class="tool-link">securitytrails.com</a>
+            <a href="https://dnslytics.com/" target="_blank" class="tool-link">dnslytics.com</a>
+            <a href="https://viewdns.info/" target="_blank" class="tool-link">viewdns.info</a>
+        </div>
+    </div>
+
+    <!-- 4 -->
+    <div class="method-block">
+        <div class="method-header">
+            <span class="num">[4]</span>
+            <h5>Чёрные списки</h5>
+        </div>
+        <div class="method-desc">Узнайте, не забанен ли домен в антивирусах или базах мошеннических сайтов.</div>
+        <div class="tools">
+            <span class="label">[ ИНСТРУМЕНТЫ ]</span>
+            <a href="https://2ip.ru/blacklist/" target="_blank" class="tool-link">2ip.ru/blacklist/</a>
+            <a href="https://www.google.com/transparencyreport/safebrowsing/" target="_blank" class="tool-link">Google Safe Browsing</a>
+            <a href="https://www.virustotal.com/gui/home/url" target="_blank" class="tool-link">virustotal.com</a>
+        </div>
+    </div>
+
+    <!-- 5 -->
+    <div class="method-block">
+        <div class="method-header">
+            <span class="num">[5]</span>
+            <h5>Проверка юридического лица (ЕГРЮЛ)</h5>
+        </div>
+        <div class="method-desc">Сравните данные в оферте с официальной выпиской. Массовый директор или недавняя регистрация — 100% фейк.</div>
+        <div class="tools">
+            <span class="label">[ ИНСТРУМЕНТЫ ]</span>
+            <a href="https://egrul.nalog.ru/" target="_blank" class="tool-link">egrul.nalog.ru</a>
+            <a href="https://focus.kontur.ru/" target="_blank" class="tool-link">focus.kontur.ru</a>
+            <a href="https://www.list-org.com/" target="_blank" class="tool-link">list-org.com</a>
+        </div>
+    </div>
+
+    <!-- 6 -->
+    <div class="method-block">
+        <div class="method-header">
+            <span class="num">[6]</span>
+            <h5>Проверка телефона и email</h5>
+        </div>
+        <div class="method-desc">Пробиваем номер через специализированные сервисы. Если номер в спам-базах — риск.</div>
+        <div class="tools">
+            <span class="label">[ ИНСТРУМЕНТЫ ]</span>
+            <a href="https://nomeroogram.net/" target="_blank" class="tool-link">nomeroogram.net</a>
+            <a href="https://www.antiscam.ru/" target="_blank" class="tool-link">antiscam.ru</a>
+            <a href="https://tools.emailhippo.com/" target="_blank" class="tool-link">emailhippo.com</a>
+        </div>
+    </div>
+
+    <!-- 7 -->
+    <div class="method-block">
+        <div class="method-header">
+            <span class="num">[7]</span>
+            <h5>Проверка отзывов на независимых площадках</h5>
+        </div>
+        <div class="method-desc">Не верьте отзывам только на сайте — они легко подделываются. Ищите реальные отзывы на сторонних ресурсах.</div>
+        <div class="tools">
+            <span class="label">[ ИНСТРУМЕНТЫ ]</span>
+            <a href="https://otzovik.com/" target="_blank" class="tool-link">otzovik.com</a>
+            <a href="https://irecommend.ru/" target="_blank" class="tool-link">irecommend.ru</a>
+            <a href="https://www.trustpilot.com/" target="_blank" class="tool-link">trustpilot.com</a>
+        </div>
+    </div>
+
+    <!-- 8 -->
+    <div class="method-block">
+        <div class="method-header">
+            <span class="num">[8]</span>
+            <h5>Обратный поиск изображений</h5>
+        </div>
+        <div class="method-desc">Загрузите фото товара. Если оно используется на десятках других сайтов — магазин перепродаёт или торгует подделками.</div>
+        <div class="tools">
+            <span class="label">[ ИНСТРУМЕНТЫ ]</span>
+            <a href="https://images.google.com/" target="_blank" class="tool-link">images.google.com</a>
+            <a href="https://yandex.ru/images/" target="_blank" class="tool-link">yandex.ru/images</a>
+            <a href="https://tineye.com/" target="_blank" class="tool-link">tineye.com</a>
+        </div>
+    </div>
+
+    <!-- 9 -->
+    <div class="method-block">
+        <div class="method-header">
+            <span class="num">[9]</span>
+            <h5>Проверка адреса через карты</h5>
+        </div>
+        <div class="method-desc">Если указан адрес офиса/склада, проверьте его на карте. Жилой дом, пустырь или отсутствие вывески — почти гарантия мошенничества.</div>
+        <div class="tools">
+            <span class="label">[ ИНСТРУМЕНТЫ ]</span>
+            <a href="https://2gis.ru/" target="_blank" class="tool-link">2gis.ru</a>
+            <a href="https://yandex.ru/maps/" target="_blank" class="tool-link">yandex.ru/maps</a>
+            <a href="https://www.google.com/maps/" target="_blank" class="tool-link">google.com/maps</a>
+        </div>
+    </div>
+
+    <!-- 10 -->
+    <div class="method-block">
+        <div class="method-header">
+            <span class="num">[10]</span>
+            <h5>Активность в соцсетях</h5>
+        </div>
+        <div class="method-desc">Живой аккаунт с регулярными постами, комментариями и обратной связью — признак реального бизнеса. Боты — красный флаг.</div>
+        <div class="tools">
+            <span class="label">[ ИНСТРУМЕНТЫ ]</span>
+            <span style="color:#4a6a4a; font-size:0.85rem;">поиск в VK, Instagram, Telegram — вручную</span>
+        </div>
+    </div>
+
+    <!-- Шкала рисков -->
+    <div class="risk-meter">
+        <span style="font-weight:600; color:#88bb88; margin-right:0.5rem;">[ ОЦЕНКА РИСКА ]</span>
+        <span class="level"><span class="dot green"></span> <strong>Низкий</strong> — все методы пройдены</span>
+        <span class="level"><span class="dot yellow"></span> <strong>Средний</strong> — 1–2 тревожных сигнала</span>
+        <span class="level"><span class="dot red"></span> <strong>Высокий</strong> — 3+ красных флагов (покупку отменить)</span>
+    </div>
+
+    <!-- ===== ГЛАВА 5 ===== -->
+    <div class="section-title" id="ch5">
+        <span class="num">[5]</span> РЕАЛЬНЫЕ КЕЙСЫ
+    </div>
+
+    <div class="case-block">
+        <h4><span class="sym">[!]</span> Кейс 1: «Магазин техники с 90% скидкой»</h4>
+        <p style="margin-top:0.3rem; color:#8aaa8a;">Домен зарегистрирован 2 недели назад (WHOIS), фото скопированы с официального сайта Samsung (Google Images), адрес — несуществующий офис (2GIS). OSINT спас покупателя от потери 50 000 ₽.</p>
+    </div>
+
+    <div class="case-block" style="border-left-color:#33cc33;">
+        <h4><span class="sym">[!]</span> Кейс 2: «Поддельный сайт люксовой косметики»</h4>
+        <p style="margin-top:0.3rem; color:#8aaa8a;">Магазин копировал дизайн известного бренда, но в контактах был указан email на бесплатном домене (@gmail.com). Whois показал, что домен зарегистрирован на частное лицо в другой стране.</p>
+    </div>
+
+    <!-- ===== ГЛАВА 6 ===== -->
+    <div class="section-title" id="ch6">
+        <span class="num">[6]</span> ЧЕК-ЛИСТ ПЕРЕД ПОКУПКОЙ
+    </div>
+
+    <div class="checklist-block">
+        <h3><span class="sym">[+]</span> ЧТО НУЖНО ПРОВЕРИТЬ</h3>
+        <div class="checklist-grid">
+            <label><input type="checkbox" checked disabled> Домен зарегистрирован > 1 года</label>
+            <label><input type="checkbox" checked disabled> Есть физический адрес (не а/я)</label>
+            <label><input type="checkbox" checked disabled> Телефон не в спам-базах</label>
+            <label><input type="checkbox" checked disabled> Есть живые отзывы на 3+ площадках</label>
+            <label><input type="checkbox" checked disabled> Цена рыночная (не слишком низкая)</label>
+            <label><input type="checkbox" checked disabled> Юр.лицо активно > 2 лет</label>
+            <label><input type="checkbox" checked disabled> Фото товара уникальны</label>
+            <label><input type="checkbox" checked disabled> Есть страница на маркетплейсе</label>
+            <label><input type="checkbox" checked disabled> Не в чёрных списках</label>
+        </div>
+        <p style="margin-top:1rem; background:#1a2a1a; padding:0.3rem 1.2rem; border-radius:0.3rem; display:inline-block; font-weight:600; color:#ccaa33; border:1px solid #1a3a1a;">[!] Если не выполнено >=3 пунктов — покупку отложить</p>
+    </div>
+
+    <!-- ===== ГЛАВА 7 ===== -->
+    <div class="section-title" id="ch7">
+        <span class="num">[7]</span> ВЫВОДЫ
+    </div>
+
+    <div class="conclusion">
+        <h3><span class="sym">>></span> ЧТО МЫ УЗНАЛИ</h3>
+        <ul>
+            <li>OSINT — это законный и эффективный способ проверки информации из открытых источников.</li>
+            <li>Он помогает не попасться на уловки мошенников и сэкономить деньги.</li>
+            <li>Главный принцип: один источник — совпадение, три источника — факт.</li>
+            <li>Достаточно 10–15 минут проверки, чтобы выявить 95% фейковых магазинов.</li>
+            <li><strong>Золотой стандарт:</strong> WHOIS + отзывы + поиск по картинке + 2GIS.</li>
+        </ul>
+        <p style="margin-top:1rem; background:#1a2a1a; color:#33cc33; padding:0.4rem 1.5rem; border-radius:0.3rem; display:inline-block; font-weight:600; border:1px solid #1a3a1a;">[+] Умение гуглить — это навык. Умение гуглить и анализировать — это OSINT.</p>
+    </div>
+
+    <!-- ===== ГЛАВА 8 ===== -->
+    <div class="section-title" id="ch8">
+        <span class="num">[8]</span> СПИСОК ЛИТЕРАТУРЫ
+    </div>
+
+    <div class="references">
+        <h3><span class="sym">#</span> ИСТОЧНИКИ</h3>
+        <ul>
+            <li>Михаил Райтман — «OSINT. Разведка на основе открытых источников»</li>
+            <li>Сайт Федеральной налоговой службы — egrul.nalog.ru</li>
+            <li>Справочно-информационный портал 2GIS — 2gis.ru</li>
+            <li>Архив интернета — archive.org</li>
+            <li>Платформа независимых отзывов — otzovik.com</li>
+            <li>Международная платформа Trustpilot — trustpilot.com</li>
+        </ul>
+    </div>
+
+    <!-- ===== ФУТЕР ===== -->
+    <div class="footer">
+        [ 2026 ] :: ПРОЕКТНАЯ РАБОТА :: 7 «К» КЛАСС
+    </div>
+
+</div>
+
+</body>
+</html>
